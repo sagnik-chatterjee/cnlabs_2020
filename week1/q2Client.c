@@ -1,47 +1,65 @@
-/*  Make the necessary includes and set up the variables.  */
-
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <stdio.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
 #include <stdlib.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <string.h>
+#include <ctype.h>
 
+#define MAX 80
 #define PORT 8080
+#define SA struct sockaddr
 
-int main(){
-    int sockfd;
-    int len;
-    struct sockaddr_in address;
-    int result;
-    char ch;
+void clifunc(int sockfd){
+    char buff[MAX];
+    int n;
+    for (;;) {
+        bzero(buff, sizeof(buff));
+        printf("Enter the string: ");
+        n = 0;
+        while ((buff[n++] = getchar()) != '\n');
+        write(sockfd, buff, sizeof(buff));
+        bzero(buff, sizeof(buff));
+        read(sockfd, buff, sizeof(buff));
+        printf(" Server Returned: %s", buff);
+        if ((strncmp(buff, "QUIT", 4)) == 0) {
+            printf("Client Exit...\n");
+            break;
+        }
+}
 
+int main()
+{
+    int sockfd, connfd;
+    struct sockaddr_in servaddr, cli;
+
+    // socket create and verification
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd == -1) {
+        printf("[STATUS] Socket creation failed...\n");
+        exit(0);
+    }
+    else{
+        printf("[STATUS] Socket successfully created..\n");
+    }
+    bzero(&servaddr, sizeof(servaddr));
 
+    // assign IP, PORT
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    servaddr.sin_port = htons(PORT);
 
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = inet_addr("127.0.0.1");
-    address.sin_port = PORT;
-    len = sizeof(address);
-
-/*  Now connect our socket to the server's socket.  */
-
-    result = connect(sockfd, (struct sockaddr *)&address, len);
-
-    if(result == -1) {
-        perror("[STATUS] Error Reported.");
-        exit(1);
+    // connect the client socket to server socket
+    if (connect(sockfd, (SA*)&servaddr, sizeof(servaddr)) != 0) {
+        printf("[STATUS] Connection with the server failed...\n");
+        exit(0);
+    }
+    else{
+        printf("[STATUS] Connected to the server..\n");
     }
 
-/*  We can now read/write via sockfd.  */
-    printf("[STATUS] Please Type String to send:");
-    //scanf("%c", &ch); 
-    char input_str[13];//13 char string which is sent to server 
-    gets(input_str);
-    write(sockfd, &input_str, 13);
-    read(sockfd, &ch, 13);
-    printf("[STATUS] Char from Server Received = %c\n", ch);
+    // function for client
+    clifunc(sockfd);
+
+    // close the socket
     close(sockfd);
-    exit(0);
 }

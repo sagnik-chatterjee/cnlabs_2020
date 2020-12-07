@@ -1,56 +1,98 @@
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <stdio.h>
+#include <netdb.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <ctype.h>
 
+#define MAX 80
 #define PORT 8080
+#define SA struct sockaddr
 
-int main(){
-    int server_sockfd, client_sockfd;
-    int server_len, client_len;
-    struct sockaddr_in server_address;
-    struct sockaddr_in client_address;
+// Function designed for chat between client and server.
+void servfunc(int sockfd)
+{
+    char buff[MAX];
+    int n;
+    // infinite loop for chat
+    
+        bzero(buff, MAX);
 
-/*  Create an unnamed socket for the server.  */
+        // read the message from client and copy it in buffer
+        read(sockfd, buff, sizeof(buff));
+        // print buffer which contains the client contents
+       // printf("From client: %s\t To client : ", buff);
+        int j=0;
+        while(buff[j]){
+            char c =buff[j];
+            buff[j]=toupper(c);
+            j++;
+        }
+        printf("The capitalized string is %s\t",buff);
 
-    server_sockfd = socket(AF_INET, SOCK_STREAM, 0);
+        bzero(buff, sizeof(buff));
+// Read server message from keyboard in the buffer
+        n=0;
+        while ((buff[n++] = getchar()) != '\n')
+            ;
+// and send that buffer to client
+        write(sockfd, buff, sizeof(buff));
 
-/*  Name the socket.  */
-
-    server_address.sin_family = AF_INET;
-    server_address.sin_addr.s_addr = inet_addr("127.0.0.1");
-    server_address.sin_port = PORT;
-    server_len = sizeof(server_address);
-    bind(server_sockfd, (struct sockaddr *)&server_address, server_len);
-
-/*  Create a connection queue and wait for clients.  */
-
-    listen(server_sockfd, 5);
-    while(1) {
-        char buff[256];//string received from client 
-        printf("[STATUS] Server waiting...\n");
-
-/*  Accept a connection.  */
-
-        client_len = sizeof(client_address);
-        client_sockfd = accept(server_sockfd, 
-            (struct sockaddr *)&client_address, &client_len);
-
-/*  We can now read/write to client on client_sockfd.  */
-         //char *inet_ntoa(client_addr.sin_addr);
-    char * ip_add =inet_ntoa(client_address.sin_addr);
-    int port=client_address.sin_port;
-
-    printf("IP:%s  PORT:%d\n", ip_add,port); 
-        read(client_sockfd, &ch, 1);
+        // if msg contains "Exit" then server exit and session ended.
         
+}
+int main()
+{
+    int sockfd, connfd, len;
+    struct sockaddr_in servaddr, cli;
 
-
-        write(client_sockfd, &ch, 1);
-        close(client_sockfd);
+    // socket create and verification
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd == -1) {
+        printf("[STATUS] Socket creation failed...\n");
+        exit(0);
     }
+    else
+        printf("[STATUS] Socket successfully created..\n");
+    bzero(&servaddr, sizeof(servaddr));
+
+    // assign IP, PORT
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    servaddr.sin_port = htons(PORT);
+
+    // Binding newly created socket to given IP and verification
+    if ((bind(sockfd, (SA*)&servaddr, sizeof(servaddr))) != 0) {
+        printf("[STATUS] Socket bind failed...\n");
+        exit(0);
+    }
+    else
+        printf("[STATUS] Socket successfully binded..\n");
+
+    // Now server is ready to listen and verification
+    if ((listen(sockfd, 5)) != 0) {
+        printf("[STATUS] Listen failed...\n");
+        exit(0);
+    }
+    else
+        printf("[STATUS] Server listening..\n");
+    len = sizeof(cli);
+
+    // Accept the data packet from client and verification
+    connfd = accept(sockfd, (SA*)&cli, &len);
+    if (connfd < 0) {
+        printf("[STATUS] Server acccept failed...\n");
+        exit(0);
+    }
+    else
+        printf("[STATUS] Server acccept the client...\n");
+
+    // Function for chatting between client and server
+    servfunc(connfd);
+
+    // After sending exit message close the socket
+    close(sockfd);
 }
 
