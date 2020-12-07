@@ -1,48 +1,56 @@
 //Day time Server 
 //Gets current time from the server , 
-#include <stdio.h>
+
+
 #include <time.h>
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <netint/in.h>
+#include <stdio.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>
-#include <netdb.h>
-
-#define sa struct sockaddr
-
-#define PORT 8080
-#define MAX 80 
-
+#include <unistd.h>
+#include <stdlib.h>
 
 
 
 int main(){
-	int sockfd,connfd;
-	struct sockaddr_in ,servaddr,cli;
+	int server_sockfd,client_sockfd;
+	int server_len,client_len;
+	struct sockaddr_in server_address;
+	struct sockaddr_in client_address;
 
-	//sockert create and verify 
-	sockfd=  socket(AF_INET,SOCK_STREAM,0);
-	if(sockfd==-1){
-		printf("[STATUS] Socket creation failed ...\n");
-		exit(0);
-	}
-	else{
-		printf("[STATUS] Socket successfully created ...\n");
-	}
-	
-	bzero(&servaddr,sizeof(servaddr));
+	//unnamed sockt for the server 
+	server_sockfd= socket(AF_INET,SOCK_STREAM,0);
+	//naming the soket 
+	server_address.sin_family =AF_INET;
+	server_address.sin_addr.s_addr =inet_addr("127.0.0.1");
+	server_address.sin_port= 8080;
+	server_len=sizeof(server_address);
+	bind(server_sockfd,(struct sockaddr *)&server_address,server_len);
 
-	//asign ip and port 
-	servaddr.sin_family= AF_INET;
-	servaddr.sin_addr.sin_addr=inet_addr("127.0.0.1");
-	servaddr.sin_port= htons(PORT);
+	//create a connection queueu and wait for clients 
+	listen(server_sockfd,5);
+	while(1){
 
-	//bind the newly created socket to given ip and verification 
-	if((bind(sockfd,(sa*)&servaddr,sizeof(servaddr)))!=0){
-		printf("[STATUS] Socket bind failed ... \n");
-		exit(0);
+		printf("[STATUS] Server Waiting ...\n");
+		//accept a connection 
+		client_len =sizeof(client_address);
+		client_sockfd = accept(server_sockfd,(struct sockaddr *)&client_address,&client_len);
 		
-	}
+		//now read and write to client on client_sockfd 
 
+		//char *ip_add =inet_ntoa(client_address.sin_addr);
+		//int port= client_address.sin_port; 
 
+		//get the localtime via asctime() 
+
+		
+
+		struct tm tm
+        = *localtime(&(time_t){ time(NULL) }); 
+		
+		printf("The localtime defined now is %s:",asctime(&tm));
+		//write(client_sockfd,&message,sizeof (message));
+		close(client_sockfd);
+		
+	}	
 }

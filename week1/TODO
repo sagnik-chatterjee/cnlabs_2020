@@ -1,0 +1,4 @@
+## Q2 CONNECTION REFUSED problem maybe some eror in clifunc 
+## Q3 was not working concurrently properly 
+## Q4 Working properly: add code to clsoe the connection after client closes --> not implemented ..but it is sshowing the time 
+
